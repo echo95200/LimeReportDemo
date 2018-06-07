@@ -21,6 +21,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void setDatabase();
+
 private slots:
     void on_pushButton_clicked();
 
@@ -32,7 +34,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-//    void prepareData(QSqlQuery* ds, LimeReport::CallbackInfo info,QVariant& data);
 
     LimeReport::ReportEngine *report;
     QProgressDialog* m_progressDialog;
