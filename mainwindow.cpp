@@ -86,10 +86,12 @@ void MainWindow::setDatabase(QString invoiceNumber)
     T_INVOICE_MODEL->setQuery(sqlStrInvoice,m_db);
     report->dataManager()->addModel("T_INVOICE",T_INVOICE_MODEL,true);
 
+    // Add if
     QSqlQueryModel* T_TICKET_DETAIL_MODEL = new QSqlQueryModel();
-    QString sqlStrIicDet = "SELECT T_TICKET_DETAIL.* FROM T_INVOICE "
-                            "INNER JOIN T_TICKET_DETAIL ON T_INVOICE.TICKET_ID = T_TICKET_DETAIL.TICKET_ID "
-                            "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlStrIicDet = "SELECT T_TICKET_DETAIL.* "
+                           "FROM T_INVOICE "
+                           "INNER JOIN T_TICKET_DETAIL ON T_INVOICE.TICKET_ID = T_TICKET_DETAIL.TICKET_ID "
+                           "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlStrIicDet.append(invoiceNumber);
     T_TICKET_DETAIL_MODEL->setQuery(sqlStrIicDet,m_db);
     report->dataManager()->addModel("T_TICKET_DETAIL",T_TICKET_DETAIL_MODEL,true);
