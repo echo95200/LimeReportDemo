@@ -7,6 +7,7 @@
 #include <QProgressDialog>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQueryModel>
+#include <QFile>
 #include "lrreportengine.h"
 
 namespace Ui {
@@ -21,7 +22,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    void setDatabase();
+    void setDatabase(QString invNum);
+    bool initDatabase();
 
 private slots:
     void on_pushButton_clicked();
@@ -46,6 +48,8 @@ private:
     int m_currentOrderRecord;
     QSqlQuery* m_customers;
     QSqlQuery* m_orders;
+
+    QString databaseFilePath;
 };
 
 #endif // MAINWINDOW_H
