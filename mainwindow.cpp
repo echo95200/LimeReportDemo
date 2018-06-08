@@ -131,10 +131,10 @@ void MainWindow::setDatabase(QString invoiceNumber)
     int sizeQueryTax = 0;
     while (queryTax.next()) {
         sizeQueryTax++;
-        TaxList.append(queryTax.value(0).toString());
-        HTList.append(queryTax.value(1).toString());
-        TVAList.append(queryTax.value(2).toString());
-        TTCList.append(queryTax.value(3).toString());
+        TaxList.append(QString::number(queryTax.value(0).toDouble(),10,2));
+        HTList.append(QString::number(queryTax.value(1).toDouble(),10,2));
+        TVAList.append(QString::number(queryTax.value(2).toDouble(),10,2));
+        TTCList.append(QString::number(queryTax.value(3).toDouble(),10,2));
     }
     while (sizeQueryTax < 4) {
         sizeQueryTax++;
@@ -143,17 +143,17 @@ void MainWindow::setDatabase(QString invoiceNumber)
         TVAList.append("");
         TTCList.append("");
     }
-    qDebug() << TaxList;
-    qDebug() << HTList;
-    qDebug() << TVAList;
-    qDebug() << TTCList;
+//    qDebug() << TaxList;
+//    qDebug() << HTList;
+//    qDebug() << TVAList;
+//    qDebug() << TTCList;
 
     //test
     QString taxListModelName;
     QString TaxListName;
     QString TAXDBName = "TEST";
-    int index = 0;
-    while (index < 4) {
+    int index = 1;
+    while (index < 5) {
         taxListModelName.append(QString::number(index));
         TaxListName.append(QString::number(index));
         TAXDBName = "TEST";
@@ -261,8 +261,9 @@ void MainWindow::setDatabase(QString invoiceNumber)
     int sizeQuery = 0;
     while (query.next()) {
         sizeQuery ++;
+        //payTypeList.append(QString::number(query.value(0).toDouble(),10,2));
         payTypeList.append(query.value(0).toString());
-        payTotalList.append(query.value(1).toString());
+        payTotalList.append(QString::number(query.value(1).toDouble(),10,2));
     }
     qDebug() << sizeQuery;
     while (sizeQuery < 5) {
