@@ -50,6 +50,7 @@ private:
     QSqlQuery* m_orders;
 
     QString databaseFilePath;
+    QSettings *configIni;
 };
 
 #endif // MAINWINDOW_H

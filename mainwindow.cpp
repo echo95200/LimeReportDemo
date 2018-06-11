@@ -15,6 +15,8 @@
 #include <QSqlTableModel>
 #include <QSqlRecord>
 #include <QTableView>
+#include <QTextCodec>
+#include <QSettings>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -22,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     report = new LimeReport::ReportEngine(this);
+    configIni = new QSettings(tr("%1/LimeReportDemo.ini").arg(QCoreApplication::applicationDirPath()),QSettings::IniFormat);
 
     connect(report, SIGNAL(renderStarted()), this, SLOT(renderStarted()));
     connect(report, SIGNAL(renderPageFinished(int)),
@@ -39,12 +42,15 @@ MainWindow::~MainWindow()
     delete ui;
     delete m_customers;
     delete m_orders;
+    delete configIni;
 }
 
 bool MainWindow::initDatabase()
 {
     bool flag = false;
-    databaseFilePath = "/home/echo/ventap.fdb";
+    configIni->beginGroup("LimeReportDemo");
+    databaseFilePath = configIni->value("databaseFilePath",databaseFilePath).toString();
+    configIni->endGroup();
     QFile dbFile(databaseFilePath);
     if(dbFile.exists())
     {
@@ -52,12 +58,10 @@ bool MainWindow::initDatabase()
         m_db.setDatabaseName(dbFile.fileName());
         m_db.setUserName("SYSDBA");
         m_db.setPassword("masterkey");
-        if(m_db.open())
-        {
+        if(m_db.open()){
             flag = true;
         }
-        else
-        {
+        else{
             QMessageBox::about(NULL,"Info","Database file cannot be opened!");
         }
     }
@@ -69,64 +73,104 @@ bool MainWindow::initDatabase()
 
 void MainWindow::setDatabase(QString invoiceNumber)
 {
-    //Get the information of the Ticket and Invoice
-    QSqlQueryModel* T_TICKET_MODEL = new QSqlQueryModel();
+    // Query String
+    /*
     QString sqlStrTicket = "SELECT T_TICKET.* FROM T_INVOICE "
                             "INNER JOIN T_TICKET ON T_INVOICE.TICKET_ID = T_TICKET.ID "
                             "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlStrInvoice = "SELECT T_INVOICE.* FROM T_INVOICE "
+                            "INNER JOIN T_TICKET ON T_INVOICE.TICKET_ID = T_TICKET.ID "
+                            "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlStrIicDet = "SELECT T_TICKET_DETAIL.* "
+                           "FROM T_INVOICE "
+                           "INNER JOIN T_TICKET_DETAIL ON T_INVOICE.TICKET_ID = T_TICKET_DETAIL.TICKET_ID "
+                           "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlStrIicPay = "SELECT T_TICKET_PAYMENT.* FROM T_INVOICE "
+                            "INNER JOIN T_TICKET_PAYMENT ON T_INVOICE.TICKET_ID = T_TICKET_PAYMENT.TICKET_ID "
+                            "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlStrIicTax = "SELECT T_TICKET_TAX.* FROM T_INVOICE "
+                            "INNER JOIN T_TICKET_TAX ON T_INVOICE.TICKET_ID = T_TICKET_TAX.TICKET_ID "
+                            "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlStrTicTil = "SELECT T_TITLE.* FROM T_TICKET "
+                          "INNER JOIN T_INVOICE ON T_TICKET.ID = T_INVOICE.TICKET_ID "
+                          "INNER JOIN T_TITLE ON T_TITLE.ID = T_TICKET.TITLE_ID "
+                          "WHERE T_INVOICE.INVOICE_NUM = ";
+
+    QString sqlQueryTax = "SELECT T_TICKET_TAX.TAX_RATE,T_TICKET_TAX.TOTAL_HT,"
+                          "T_TICKET_TAX.TOTAL_TVA,TOTAL_TTC "
+                          "FROM T_INVOICE "
+                          "INNER JOIN T_TICKET_TAX ON T_INVOICE.TICKET_ID = T_TICKET_TAX.TICKET_ID "
+                          "WHERE T_INVOICE.INVOICE_NUM = ";
+    QString sqlQuery = "SELECT T_TICKET_PAYMENT.PAY_TYPE,T_TICKET_PAYMENT.TOTAL "
+                       "FROM T_TICKET_PAYMENT "
+                       "INNER JOIN T_INVOICE ON T_TICKET_PAYMENT.TICKET_ID = T_INVOICE.TICKET_ID "
+                       "WHERE T_INVOICE.INVOICE_NUM = ";
+
+
+    //write setting file
+
+    QString initFilePath = QCoreApplication::applicationDirPath();
+    QSettings *configIni = new QSettings(tr("%1/LimeReportDemo.ini").arg(initFilePath),QSettings::IniFormat);
+    configIni->setIniCodec(QTextCodec::codecForName("System"));
+    configIni->beginGroup("LimeReportDemo");
+    configIni->setValue("databaseFilePath",this->databaseFilePath);
+    configIni->setValue("sqlStrTicket",sqlStrTicket);
+    configIni->setValue("sqlStrInvoice",sqlStrInvoice);
+    configIni->setValue("sqlStrIicDet",sqlStrIicDet);
+    configIni->setValue("sqlStrIicPay",sqlStrIicPay);
+    configIni->setValue("sqlStrIicTax",sqlStrIicTax);
+    configIni->setValue("sqlStrTicTil",sqlStrTicTil);
+    configIni->setValue("sqlQueryTax",sqlQueryTax);
+    configIni->setValue("sqlQuery",sqlQuery);
+    configIni->endGroup();
+    */
+
+    //read setting file
+    configIni->beginGroup("LimeReportDemo");
+    QString sqlStrTicket = configIni->value("sqlStrTicket").toString();
+    QString sqlStrInvoice = configIni->value("sqlStrInvoice").toString();
+    QString sqlStrIicDet = configIni->value("sqlStrIicDet").toString();
+    QString sqlStrIicPay = configIni->value("sqlStrIicPay").toString();
+    QString sqlStrIicTax = configIni->value("sqlStrIicTax").toString();
+    QString sqlStrTicTil = configIni->value("sqlStrTicTil").toString();
+    QString sqlQueryTax = configIni->value("sqlQueryTax").toString();
+    QString sqlQuery = configIni->value("sqlQuery").toString();
+    configIni->endGroup();
+
+
+    //Get the information of the Ticket and Invoice
+    QSqlQueryModel* T_TICKET_MODEL = new QSqlQueryModel();
     sqlStrTicket.append(invoiceNumber);
     T_TICKET_MODEL->setQuery(sqlStrTicket,m_db);
     report->dataManager()->addModel("T_TICKET",T_TICKET_MODEL,true);
 
     QSqlQueryModel* T_INVOICE_MODEL = new QSqlQueryModel();
-    QString sqlStrInvoice = "SELECT T_INVOICE.* FROM T_INVOICE "
-                            "INNER JOIN T_TICKET ON T_INVOICE.TICKET_ID = T_TICKET.ID "
-                            "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlStrInvoice.append(invoiceNumber);
     T_INVOICE_MODEL->setQuery(sqlStrInvoice,m_db);
     report->dataManager()->addModel("T_INVOICE",T_INVOICE_MODEL,true);
 
     // Add if
     QSqlQueryModel* T_TICKET_DETAIL_MODEL = new QSqlQueryModel();
-    QString sqlStrIicDet = "SELECT T_TICKET_DETAIL.* "
-                           "FROM T_INVOICE "
-                           "INNER JOIN T_TICKET_DETAIL ON T_INVOICE.TICKET_ID = T_TICKET_DETAIL.TICKET_ID "
-                           "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlStrIicDet.append(invoiceNumber);
     T_TICKET_DETAIL_MODEL->setQuery(sqlStrIicDet,m_db);
     report->dataManager()->addModel("T_TICKET_DETAIL",T_TICKET_DETAIL_MODEL,true);
 
     QSqlQueryModel* T_TICKET_PAYMENT_MODEL = new QSqlQueryModel();
-    QString sqlStrIicPay = "SELECT T_TICKET_PAYMENT.* FROM T_INVOICE "
-                            "INNER JOIN T_TICKET_PAYMENT ON T_INVOICE.TICKET_ID = T_TICKET_PAYMENT.TICKET_ID "
-                            "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlStrIicPay.append(invoiceNumber);
     T_TICKET_PAYMENT_MODEL->setQuery(sqlStrIicPay,m_db);
     report->dataManager()->addModel("T_TICKET_PAYMENT",T_TICKET_PAYMENT_MODEL,true);
 
     QSqlQueryModel* T_TICKET_TAX_MODEL = new QSqlQueryModel();
-    QString sqlStrIicTax = "SELECT T_TICKET_TAX.* FROM T_INVOICE "
-                            "INNER JOIN T_TICKET_TAX ON T_INVOICE.TICKET_ID = T_TICKET_TAX.TICKET_ID "
-                            "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlStrIicTax.append(invoiceNumber);
     T_TICKET_TAX_MODEL->setQuery(sqlStrIicTax,m_db);
     report->dataManager()->addModel("T_TICKET_TAX",T_TICKET_TAX_MODEL,true);
 
     QSqlQueryModel* T_TICKET_TITLE = new QSqlQueryModel();
-    QString sqlStrTicTil = "SELECT T_TITLE.* FROM T_TICKET "
-                          "INNER JOIN T_INVOICE ON T_TICKET.ID = T_INVOICE.TICKET_ID "
-                          "INNER JOIN T_TITLE ON T_TITLE.ID = T_TICKET.TITLE_ID "
-                          "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlStrTicTil.append(invoiceNumber);
     T_TICKET_TITLE->setQuery(sqlStrTicTil,m_db);
     report->dataManager()->addModel("T_TITLE",T_TICKET_TITLE,true);
 
     // Get the information of the table T_TICKET_TAX
-    QString sqlQueryTax = "SELECT T_TICKET_TAX.TAX_RATE,T_TICKET_TAX.TOTAL_HT,"
-                          "T_TICKET_TAX.TOTAL_TVA,TOTAL_TTC "
-                          "FROM T_INVOICE "
-                          "INNER JOIN T_TICKET_TAX ON T_INVOICE.TICKET_ID = T_TICKET_TAX.TICKET_ID "
-                          "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlQueryTax.append(invoiceNumber);
     QSqlQuery queryTax(sqlQueryTax);
     QStringList TaxList,HTList,TVAList,TTCList;
@@ -145,12 +189,9 @@ void MainWindow::setDatabase(QString invoiceNumber)
         TVAList.append("");
         TTCList.append("");
     }
-//    qDebug() << TaxList;
-//    qDebug() << HTList;
-//    qDebug() << TVAList;
-//    qDebug() << TTCList;
 
     //test
+    /*
     QString taxListModelName;
     QString TaxListName;
     QString TAXDBName = "TEST";
@@ -166,6 +207,7 @@ void MainWindow::setDatabase(QString invoiceNumber)
         report->dataManager()->addModel(TAXDBName,taxListModelName,true);
         index++;
     }
+    */
 
     // TAUX
     QStringListModel* taxListModel1 = new QStringListModel();
@@ -253,10 +295,6 @@ void MainWindow::setDatabase(QString invoiceNumber)
 
 
     // Select the data from database
-    QString sqlQuery = "SELECT T_TICKET_PAYMENT.PAY_TYPE,T_TICKET_PAYMENT.TOTAL "
-                       "FROM T_TICKET_PAYMENT "
-                       "INNER JOIN T_INVOICE ON T_TICKET_PAYMENT.TICKET_ID = T_INVOICE.TICKET_ID "
-                       "WHERE T_INVOICE.INVOICE_NUM = ";
     sqlQuery.append(invoiceNumber);
     QSqlQuery query(sqlQuery);
     QStringList payTypeList,payTotalList;
@@ -322,7 +360,6 @@ void MainWindow::setDatabase(QString invoiceNumber)
     report->dataManager()->addModel("PAYMENT_TOTAL3",payTotalListModel3,true);
     report->dataManager()->addModel("PAYMENT_TOTAL4",payTotalListModel4,true);
     report->dataManager()->addModel("PAYMENT_TOTAL5",payTotalListModel5,true);
-
 }
 
 void MainWindow::on_pushButton_clicked()
